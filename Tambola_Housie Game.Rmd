@@ -1,0 +1,89 @@
+---
+title: "Tambola_Housie Game"
+output: html_document
+date: "2023-05-11"
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+if(! require("shinyWidgets")) {install.packages("shinyWidgets")} + library(shinyWidgets)
+if(! require("shiny")) {install.packages("shiny")} + library(shiny)
+if(! require("shinyMatrix")) {install.packages("shinyMatrix")} + library(shinyMatrix)
+```
+
+## Embedded Application User Interface
+
+```{r tabsets, echo=FALSE}
+ui <- fluidPage(
+  setBackgroundImage(src = "https://www.shutterstock.com/image-photo/bingo-lotto-on-wooden-background-260nw-765127483.jpg", shinydashboard = FALSE),
+  titlePanel("Housie Game"),
+  sidebarLayout(
+    sidebarPanel(
+      h4("Number Called : "),
+      h3(column(width = 6,verbatimTextOutput("Number"))),
+      actionButton("generate", "Generate Number"),
+      actionButton("reset", "Reset"),
+      ),
+    mainPanel(
+      
+      matrixInput("matrix", 
+                  label = "Housie Matrix", 
+                  value = matrix(rep(0, 100), nrow = 10, ncol = 10),
+                  rows = list(names = FALSE),
+                  cols = list(names = FALSE),
+                  class = "numeric")
+    )
+  )
+)
+
+```
+
+### Server
+
+```{r}
+server <- function(input, output, session) {
+  
+  rows<-10
+  columns<-10
+  
+  called_numbers <- reactiveVal(vector("numeric"))
+  
+  generate_random_number <- function() {
+    unique(sample(rep(1:90), 90, replace = F))
+    
+  }
+  
+  observeEvent(input$generate, {
+    new_number <- generate_random_number()
+    called_numbers(c(called_numbers(), new_number))
+    
+    
+    
+    matrix_data <- input$matrix
+    first_zero <- which(matrix_data == 0)[1]
+    if (!is.na(first_zero)) {
+      matrix_data[first_zero] <- new_number
+      updateMatrixInput(session, "matrix", value = matrix_data)
+    }
+    output$Number <- renderPrint({
+      as.numeric(new_number[1])
+    })
+    
+  })
+  
+  observeEvent(input$reset, {
+    called_numbers(vector("numeric"))
+    updateMatrixInput(session, "matrix", value = matrix(rep(0, rows * columns), nrow = rows, ncol = columns))
+  })
+  
+}
+
+shinyApp(ui, server,options = list(launch.browser =T))
+
+```
+
+Note the use of the `height` parameter to determine how much vertical space the embedded application should occupy.
+
+You can also use the `shinyApp` function to define an application inline rather then in an external directory.
+
+In all of R code chunks above the `echo = FALSE` attribute is used. This is to prevent the R code within the chunk from rendering in the document alongside the Shiny components.
